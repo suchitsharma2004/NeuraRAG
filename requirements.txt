@@ -1,1 +1,12 @@
 Django
+google-generativeai
+faiss-cpu
+PyPDF2
+python-docx
+django-cors-headers
+djangorestframework
+celery
+redis
+numpy
+sentence-transformers
+python-dotenv
