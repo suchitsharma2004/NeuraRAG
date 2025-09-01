@@ -1,0 +1,44 @@
+RAG Assistant Test Document
+
+This is a test document for the RAG (Retrieval-Augmented Generation) assistant application.
+
+Overview:
+The RAG Assistant is a Django-based application that allows users to upload documents and ask questions about their content using artificial intelligence.
+
+Key Features:
+1. Document Upload: Users can upload PDF, DOCX, and TXT files
+2. Text Processing: The system extracts text from documents and splits it into chunks
+3. Vector Search: Documents are converted to embeddings for semantic search
+4. AI Responses: Uses Google Gemini to generate natural language responses
+5. Source Citations: Responses include references to the original documents
+
+Technical Architecture:
+- Backend: Django with Django REST Framework
+- AI Model: Google Gemini API for language generation
+- Embeddings: Sentence Transformers (all-MiniLM-L6-v2)
+- Vector Database: FAISS for similarity search
+- Task Queue: Celery with Redis for background processing
+
+How it Works:
+1. User uploads a document through the web interface
+2. System extracts text and splits it into chunks
+3. Each chunk is converted to a vector embedding
+4. Embeddings are stored in FAISS vector database
+5. When user asks a question, the system:
+   - Converts the question to an embedding
+   - Searches for similar chunks in the vector database
+   - Sends relevant chunks to Gemini for response generation
+   - Returns AI-generated answer with source citations
+
+Use Cases:
+- Research document analysis
+- Legal document review
+- Technical documentation queries
+- Academic paper exploration
+- Business document insights
+
+Example Questions:
+- What is this document about?
+- What are the key features mentioned?
+- How does the RAG system work?
+- What technologies are used in the architecture?
