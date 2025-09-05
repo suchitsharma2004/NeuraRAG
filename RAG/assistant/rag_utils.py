@@ -219,7 +219,7 @@ class GeminiLLM:
         if settings.GEMINI_API_KEY:
             genai.configure(api_key=settings.GEMINI_API_KEY)
             # Use the newer model name
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
         else:
             self.model = None
             print("Warning: GEMINI_API_KEY not set in settings")
