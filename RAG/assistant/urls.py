@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     DocumentViewSet, ChatSessionViewSet, ProcessingTaskViewSet,
     ChatAPIView, search_documents, get_statistics, chat_interface,
-    clear_vector_database, debug_documents, rebuild_vector_store
+    clear_vector_database, debug_documents, rebuild_vector_store, index
 )
 
 # Create router for ViewSets
@@ -14,8 +14,11 @@ router.register(r'processing-tasks', ProcessingTaskViewSet)
 
 # Define URL patterns
 urlpatterns = [
+    # Home page
+    path('', index, name='index'),
+    
     # Chat interface
-    path('', chat_interface, name='chat-interface'),
+    path('chat/', chat_interface, name='chat-interface'),
     
     # API router URLs
     path('api/', include(router.urls)),
