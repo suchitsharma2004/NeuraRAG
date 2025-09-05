@@ -1,261 +1,968 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <title>RAG Assistant</title>
+    <title>NeuraRAG</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+            background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 50%, #4a4a4a 100%);
+            min-height: 100vh;
             padding: 20px;
-            background-color: #f5f5f5;
+            color: #e0e0e0;
+            overflow-x: hidden;
         }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(80, 80, 120, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(120, 80, 120, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(80, 80, 120, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
         .container {
+            max-width: 1400px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 2fr;
+            grid-template-columns: 380px 1fr;
             gap: 20px;
-            height: 80vh;
+            height: calc(100vh - 40px);
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
         }
+        
         .sidebar {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 25px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            backdrop-filter: blur(15px);
         }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .sidebar h2 {
+            color: #ffffff;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-align: left;
+            letter-spacing: 0.3px;
+            opacity: 0.95;
+        }
+        
         .chat-area {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
+            background: rgba(0, 0, 0, 0.3);
+            position: relative;
+            backdrop-filter: blur(10px);
+            height: 100%; /* Ensure proper height */
+            overflow: hidden; /* Prevent overflow issues */
         }
+        
+        .chat-header {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0; /* Prevent header from shrinking */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .chat-header .app-name {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(135deg, #7877c6 0%, #ff77c6 50%, #77c6ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+            text-shadow: 0 0 30px rgba(120, 119, 198, 0.3);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        .chat-header .header-content {
+            /* Content is now centered */
+        }
+        
+        .chat-header p {
+            opacity: 0.7;
+            margin: 8px 0 0 0;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+        }
+        
         .upload-area {
-            border: 2px dashed #ddd;
-            border-radius: 8px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
             padding: 20px;
             text-align: center;
             margin-bottom: 20px;
             cursor: pointer;
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
         }
+        
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            transition: left 0.5s;
+        }
+        
+        .upload-area:hover::before {
+            left: 100%;
+        }
+        
         .upload-area:hover {
-            border-color: #007bff;
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.35);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
         }
+        
         .upload-area.dragover {
-            border-color: #007bff;
-            background-color: #f0f8ff;
+            border-color: rgba(120, 119, 198, 0.5);
+            background: rgba(120, 119, 198, 0.08);
+            transform: scale(1.01);
         }
+        
+        .upload-area p {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #e0e0e0;
+            margin-bottom: 6px;
+        }
+        
+        .upload-area p:last-child {
+            font-size: 0.8rem;
+            color: #a0a0a0;
+            margin-bottom: 0;
+        }
+        
         .file-input {
             display: none;
         }
+        
         .documents-list {
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
+            padding-right: 5px;
         }
+        
+        .documents-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .hello-text {
+    background: linear-gradient(135deg, #8B5FBF 0%, #6B73FF 50%, #9D50BB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+    font-size: 24px;  /* adjust size as needed */
+
+}
+        .documents-list::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+        
+        .documents-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        
         .document-item {
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 4px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
             margin-bottom: 10px;
-            background: #f9f9f9;
+            background: rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
         }
+        
+        .document-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(120, 119, 198, 0.6), rgba(255, 119, 198, 0.6));
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .document-item:hover {
+            transform: translateX(3px);
+            background: rgba(0, 0, 0, 0.35);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .document-item:hover::before {
+            transform: scaleY(1);
+        }
+        
         .document-title {
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #ffffff;
+            font-size: 0.85rem;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
+        
         .document-info {
-            font-size: 0.8em;
-            color: #666;
+            font-size: 0.75rem;
+            color: #a0a0a0;
+            line-height: 1.4;
         }
+        
         .status {
             display: inline-block;
             padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7em;
-            font-weight: bold;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 6px;
         }
+        
         .status.processed {
-            background-color: #d4edda;
-            color: #155724;
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
         }
+        
         .status.processing {
-            background-color: #fff3cd;
-            color: #856404;
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            animation: pulse 2s infinite;
         }
+        
         .status.failed {
-            background-color: #f8d7da;
-            color: #721c24;
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: #fafafa;
+            padding: 20px 30px;
+            background: rgba(0, 0, 0, 0.1);
+            margin: 0;
+            min-height: 0; /* This is crucial for flex scrolling */
+            max-height: calc(100vh - 200px); /* Ensure messages don't overflow beyond viewport */
         }
+        
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
         .message {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 8px;
+            margin-bottom: 25px;
+            animation: slideIn 0.4s ease;
         }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .message.user {
-            background: #007bff;
-            color: white;
-            margin-left: 20%;
-        }
-        .message.assistant {
-            background: #e9ecef;
-            color: #333;
-            margin-right: 20%;
-        }
-        .message-content {
-            margin-bottom: 5px;
-        }
-        .message-sources {
-            font-size: 0.8em;
-            opacity: 0.8;
-        }
-        .chat-input-area {
             display: flex;
+            justify-content: flex-end;
+        }
+        
+        .message.assistant {
+            display: flex;
+            justify-content: flex-start;
+        }
+        
+        .message-content {
+            max-width: 75%;
+            padding: 18px 22px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+        
+        .message.user .message-content {
+            background: rgba(120, 119, 198, 0.3);
+            color: #ffffff;
+            border: 1px solid rgba(120, 119, 198, 0.4);
+            border-bottom-right-radius: 6px;
+        }
+        
+        .message.assistant .message-content {
+            background: rgba(0, 0, 0, 0.35);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom-left-radius: 6px;
+        }
+        
+        .message-sources {
+            margin-top: 12px;
+            padding: 16px;
+            background: rgba(120, 119, 198, 0.08);
+            border: 1px solid rgba(120, 119, 198, 0.2);
+            border-radius: 12px;
+            font-size: 0.8rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .sources-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(120, 119, 198, 1);
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .sources-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .source-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .source-item:hover {
+            background: rgba(0, 0, 0, 0.45);
+            border-color: rgba(120, 119, 198, 0.3);
+        }
+        
+        .source-name {
+            color: #e0e0e0;
+            font-weight: 500;
+            flex: 1;
+            margin-right: 12px;
+        }
+        
+        .source-score {
+            background: rgba(120, 119, 198, 0.2);
+            color: rgba(120, 119, 198, 1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            min-width: 45px;
+            text-align: center;
+        }
+        
+        .chat-input-area {
+            padding: 20px 30px;
+            background: rgba(0, 0, 0, 0.25);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0; /* Prevent input area from shrinking */
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        
+        .message-input {
+            width: 100%;
+            padding: 15px 20px; /* Reset padding since mode indicator is now below */
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            font-size: 1rem;
+            resize: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            max-height: 120px;
+            min-height: 50px;
+            background: rgba(0, 0, 0, 0.35);
+            color: #ffffff;
+            backdrop-filter: blur(10px);
+            box-sizing: border-box;
+        }
+        
+        .message-input::placeholder {
+            color: #a0a0a0;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: rgba(120, 119, 198, 0.5);
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: 0 0 0 3px rgba(120, 119, 198, 0.1);
+        }
+        
+        .send-button {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #8987d6 0%, #ff87d6 100%);
+            color: white;
+            border: 1px solid rgba(120, 119, 198, 0.9);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .send-button:hover {
+            background: linear-gradient(135deg, #9a97e6 0%, #ff9ae6 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(120, 119, 198, 0.4);
+        }
+        
+        .send-button:active {
+            transform: translateY(0);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Query Mode Selector Styles */
+        .query-modes {
+            margin-bottom: 15px;
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .mode-label {
+            font-size: 0.85rem;
+            color: #b0b0b0;
+            margin-bottom: 12px;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 10px;
         }
-        .chat-input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .send-btn {
-            padding: 12px 24px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
+        
+        .mode-button {
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            font-weight: 500;
             cursor: pointer;
-            font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+            min-height: 44px;
         }
-        .send-btn:hover {
-            background: #0056b3;
+        
+        .mode-button:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
-        .send-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        
+        .mode-button.active {
+            background: linear-gradient(135deg, #7877c6 0%, #ff77c6 50%, #77c6ff 100%);
+            border-color: rgba(120, 119, 198, 0.5);
+            color: white;
+            box-shadow: 0 4px 15px rgba(120, 119, 198, 0.3);
+            transform: translateY(-1px);
         }
+        
+        .mode-button.active:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(120, 119, 198, 0.4);
+        }
+        
+        .mode-icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            opacity: 0.8;
+        }
+        
+        .mode-button.active .mode-icon {
+            opacity: 1;
+        }
+        
         .btn {
-            padding: 8px 16px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
+            padding: 8px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
-            margin: 2px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            letter-spacing: 0.2px;
         }
+        
         .btn:hover {
-            background: #0056b3;
+            background: rgba(0, 0, 0, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
         }
+        
         .btn.danger {
-            background: #dc3545;
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.25);
+            color: #f87171;
         }
+        
         .btn.danger:hover {
-            background: #c82333;
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.4);
         }
+        
         .btn.secondary {
-            background: #6c757d;
+            background: rgba(100, 116, 139, 0.15);
+            border-color: rgba(100, 116, 139, 0.25);
+            color: #94a3b8;
         }
+        
         .btn.secondary:hover {
-            background: #545b62;
+            background: rgba(100, 116, 139, 0.25);
+            border-color: rgba(100, 116, 139, 0.4);
         }
+        
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #007bff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #ffffff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .hidden {
-            display: none;
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        h1, h2 {
-            color: #333;
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        
+        .notification.error {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
             margin-bottom: 20px;
         }
-        .error {
-            color: #dc3545;
-            background: #f8d7da;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px 15px;
+            color: #a0a0a0;
+            opacity: 0.6;
+            font-size: 0.85rem;
         }
-        .success {
-            color: #155724;
-            background: #d4edda;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+        
+        /* Message mode indicator styles */
+        .message-mode {
+            font-size: 0.7rem;
+            color: rgba(120, 119, 198, 1);
+            background: linear-gradient(135deg, rgba(120, 119, 198, 0.2) 0%, rgba(255, 119, 198, 0.1) 100%);
+            border: 1px solid rgba(120, 119, 198, 0.3);
+            border-radius: 10px;
+            padding: 6px 12px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(120, 119, 198, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .message-mode-icon {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+            opacity: 0.9;
+        }
+
+        /* Current mode indicator styles (beside input) */
+        .mode-hint {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: rgba(120, 119, 198, 0.8);
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .mode-hint-icon {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+            opacity: 0.7;
+        }
+
+        .mode-hint-text {
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .message-input:focus + .mode-hint {
+            opacity: 1;
+            color: rgba(120, 119, 198, 1);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: calc(100vh - 20px);
+                gap: 0;
+            }
+            
+            .sidebar {
+                order: 2;
+                max-height: 300px;
+                border-right: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .chat-area {
+                order: 1;
+                min-height: 60vh;
+            }
+            
+            .message-content {
+                max-width: 90%;
+            }
+            
+            .chat-input-area {
+                padding: 20px;
+            }
+            
+            .input-container {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .input-wrapper {
+                order: 2;
+            }
+            
+            .mode-buttons {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            .mode-button {
+                padding: 10px 12px;
+                font-size: 0.75rem;
+                min-height: 40px;
+            }
+            
+            .mode-icon {
+                width: 14px;
+                height: 14px;
+            }
+            
+            .mode-hint {
+                margin-top: 6px;
+                font-size: 0.65rem;
+                justify-content: center;
+            }
+            
+            .mode-hint-icon {
+                width: 10px;
+                height: 10px;
+            }
+        }
+        
+        /* Enhanced glassmorphism effects */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, 
+                rgba(0, 0, 0, 0.3) 0%, 
+                transparent 25%, 
+                transparent 75%, 
+                rgba(0, 0, 0, 0.3) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .sidebar, .chat-area {
+            position: relative;
+            z-index: 2;
         }
     </style>
 </head>
 <body>
-    <h1>RAG Assistant - Document Chat Interface</h1>
-    
     <div class="container">
         <div class="sidebar">
             <h2>Documents</h2>
             
-            <!-- Clear Vector Database Button -->
-            <div style="margin-bottom: 15px;">
+            <!-- Button Group -->
+            <div class="button-group">
                 <button class="btn danger" onclick="clearVectorDatabase()" id="clear-vector-btn">
-                    🗑️ Clear Vector Database
+                    Clear Vector Database
                 </button>
-                <button class="btn secondary" onclick="rebuildVectorStore()" id="rebuild-vector-btn" style="margin-top: 5px;">
-                    🔄 Rebuild Vector Store
+                <button class="btn secondary" onclick="rebuildVectorStore()" id="rebuild-vector-btn">
+                    Rebuild Vector Store
                 </button>
             </div>
             
             <!-- File Upload Area -->
             <div class="upload-area" onclick="document.getElementById('file-input').click()">
-                <p>📄 Click or drag files here to upload</p>
-                <p style="font-size: 0.8em; color: #666;">Supported: PDF, DOCX, TXT</p>
+                <p>Click or drag files here to upload</p>
+                <p>Supported: PDF, DOCX, TXT</p>
                 <input type="file" id="file-input" class="file-input" accept=".pdf,.docx,.txt" multiple>
             </div>
             
             <!-- Documents List -->
             <div class="documents-list" id="documents-list">
-                <p>No documents uploaded yet.</p>
+                <div class="empty-state">
+                    <p>No documents uploaded yet.</p>
+                </div>
             </div>
         </div>
         
         <div class="chat-area">
-            <h2>Chat</h2>
-            
-            <!-- Chat Messages -->
-            <div class="chat-messages" id="chat-messages">
-                <div class="message assistant">
-                    <div class="message-content">
-                        Hello! I'm your RAG assistant. Upload some documents and I'll help you find information from them.
-                    </div>
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="header-content">
+                    <h1 class="app-name">NeuraRAG</h1>
+                    <p>Ask questions about your uploaded documents</p>
                 </div>
             </div>
             
+            <!-- Chat Messages -->
+            {% comment %} <div class="chat-messages" id="chat-messages">
+                <div class="message assistant">
+                    <div class="message-content">
+                         Hello! 
+                         I'm NeuraRAG. Upload some documents and I'll help you find information from them.
+                    </div>
+                </div>
+            </div> {% endcomment %}
+
+            <div class="chat-messages" id="chat-messages">
+    <div class="message assistant">
+        <div class="message-content">
+            <p><span class="hello-text">Hello!</span></p>
+            <p>I'm NeuraRAG. Upload some documents and I'll help you find information from them.</p>
+        </div>
+    </div>
+</div>
+
+
+
+
+            
             <!-- Chat Input -->
             <div class="chat-input-area">
-                <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question about your documents..." 
-                       onkeypress="if(event.key === 'Enter') sendMessage()">
-                <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+                <!-- Query Mode Selector -->
+                <div class="query-modes">
+                    <div class="mode-label">Query Mode</div>
+                    <div class="mode-buttons">
+                        <button class="mode-button active" data-mode="general" onclick="setQueryMode('general')">
+                            <svg class="mode-icon" viewBox="0 0 24 24">
+                                <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22H9M10,16V19.08L13.08,16H20V4H4V16H10Z"/>
+                            </svg>
+                            General Chat
+                        </button>
+                        <button class="mode-button" data-mode="summarize" onclick="setQueryMode('summarize')">
+                            <svg class="mode-icon" viewBox="0 0 24 24">
+                                <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/>
+                            </svg>
+                            Summarize
+                        </button>
+                        <button class="mode-button" data-mode="extract" onclick="setQueryMode('extract')">
+                            <svg class="mode-icon" viewBox="0 0 24 24">
+                                <path d="M15.5,12C18,12 20,14 20,16.5C20,17.38 19.75,18.21 19.31,18.9L22.39,22L21,23.39L17.88,20.32C17.19,20.75 16.37,21 15.5,21C13,21 11,19 11,16.5C11,14 13,12 15.5,12M15.5,14A2.5,2.5 0 0,0 13,16.5A2.5,2.5 0 0,0 15.5,19A2.5,2.5 0 0,0 18,16.5A2.5,2.5 0 0,0 15.5,14M6.5,2H17.5L22,6.5V16H20V8L16,4H6.5A1.5,1.5 0 0,0 5,5.5V18.5A1.5,1.5 0 0,0 6.5,20H11V22H6.5A3.5,3.5 0 0,1 3,18.5V5.5A3.5,3.5 0 0,1 6.5,2Z"/>
+                            </svg>
+                            Extract
+                        </button>
+                        <button class="mode-button" data-mode="compare" onclick="setQueryMode('compare')">
+                            <svg class="mode-icon" viewBox="0 0 24 24">
+                                <path d="M19,3H14.82C14.25,1.44 12.53,0.64 11,1.2C10.14,1.5 9.5,2.16 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7M7,9V11H9V9H7M11,9V11H17V9H11M7,13V15H9V13H7M11,13V15H17V13H11Z"/>
+                            </svg>
+                            Compare
+                        </button>
+                        <button class="mode-button" data-mode="explain" onclick="setQueryMode('explain')">
+                            <svg class="mode-icon" viewBox="0 0 24 24">
+                                <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"/>
+                            </svg>
+                            Explain
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea id="chat-input" class="message-input" placeholder="Ask a question about your documents..." 
+                               rows="1" onkeydown="handleKeyDown(event)"></textarea>
+                        <div class="mode-hint" id="mode-hint">
+                            <svg class="mode-hint-icon" viewBox="0 0 24 24">
+                                <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22H9M10,16V19.08L13.08,16H20V4H4V16H10Z"/>
+                            </svg>
+                            <span class="mode-hint-text">General mode</span>
+                        </div>
+                    </div>
+                    <button onclick="sendMessage()" class="send-button" id="send-button">
+                        Send ✨
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -263,11 +970,87 @@
     <script>
         let currentSessionId = null;
         let isProcessing = false;
+        let currentQueryMode = 'general'; // Default mode
+
+        // Query mode functionality
+        function setQueryMode(mode) {
+            currentQueryMode = mode;
+            
+            // Update active button
+            document.querySelectorAll('.mode-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+            
+            // Update placeholder text based on mode
+            updatePlaceholder(mode);
+            
+            // Update current mode indicator
+            updateCurrentModeIndicator(mode);
+        }
+
+        function updateCurrentModeIndicator(mode) {
+            const hint = document.getElementById('mode-hint');
+            const modeIcon = hint.querySelector('.mode-hint-icon');
+            const modeText = hint.querySelector('.mode-hint-text');
+            
+            const modeData = {
+                'general': {
+                    icon: 'M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22H9M10,16V19.08L13.08,16H20V4H4V16H10Z',
+                    text: 'General mode'
+                },
+                'summarize': {
+                    icon: 'M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z',
+                    text: 'Summary mode'
+                },
+                'extract': {
+                    icon: 'M15.5,12C18,12 20,14 20,16.5C20,17.38 19.75,18.21 19.31,18.9L22.39,22L21,23.39L17.88,20.32C17.19,20.75 16.37,21 15.5,21C13,21 11,19 11,16.5C11,14 13,12 15.5,12M15.5,14A2.5,2.5 0 0,0 13,16.5A2.5,2.5 0 0,0 15.5,19A2.5,2.5 0 0,0 18,16.5A2.5,2.5 0 0,0 15.5,14M6.5,2H17.5L22,6.5V16H20V8L16,4H6.5A1.5,1.5 0 0,0 5,5.5V18.5A1.5,1.5 0 0,0 6.5,20H11V22H6.5A3.5,3.5 0 0,1 3,18.5V5.5A3.5,3.5 0 0,1 6.5,2Z',
+                    text: 'Extract mode'
+                },
+                'compare': {
+                    icon: 'M19,3H14.82C14.25,1.44 12.53,0.64 11,1.2C10.14,1.5 9.5,2.16 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7M7,9V11H9V9H7M11,9V11H17V9H11M7,13V15H9V13H7M11,13V15H17V13H11Z',
+                    text: 'Compare mode'
+                },
+                'explain': {
+                    icon: 'M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z',
+                    text: 'Explain mode'
+                }
+            };
+            
+            const data = modeData[mode] || modeData['general'];
+            modeIcon.querySelector('path').setAttribute('d', data.icon);
+            modeText.textContent = data.text;
+        }
+
+        function updatePlaceholder(mode) {
+            const input = document.getElementById('chat-input');
+            const placeholders = {
+                'general': 'Ask a question about your documents...',
+                'summarize': 'Ask me to summarize a document or topic...',
+                'extract': 'Ask me to extract entities, dates, names, or key information...',
+                'compare': 'Ask me to compare multiple documents or topics...',
+                'explain': 'Ask me to explain a concept in simple terms...'
+            };
+            input.placeholder = placeholders[mode] || placeholders['general'];
+        }
+
+        function formatQueryWithMode(message, mode) {
+            const modeInstructions = {
+                'general': message,
+                'summarize': `Please provide a comprehensive summary of the following query: ${message}`,
+                'extract': `Please extract and list all relevant entities, key information, dates, names, and important details related to: ${message}`,
+                'compare': `Please compare and analyze the differences and similarities regarding: ${message}`,
+                'explain': `Please explain the following in simple, easy-to-understand terms as a teacher would: ${message}`
+            };
+            return modeInstructions[mode] || message;
+        }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             loadDocuments();
             setupFileUpload();
+            // Initialize the current mode indicator
+            updateCurrentModeIndicator('general');
         });
 
         // File upload handling
@@ -427,6 +1210,14 @@
             }
         }
 
+        // Handle Enter key in chat input
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
@@ -437,8 +1228,11 @@
             input.value = '';
             updateSendButton();
 
-            // Add user message to chat
-            addMessage('user', message);
+            // Format message based on current query mode
+            const formattedMessage = formatQueryWithMode(message, currentQueryMode);
+
+            // Add user message to chat (show original message)
+            addMessage('user', message, [], currentQueryMode);
 
             try {
                 const response = await fetch('/api/chat/', {
@@ -448,8 +1242,9 @@
                         'X-CSRFToken': getCookie('csrftoken')
                     },
                     body: JSON.stringify({
-                        message: message,
-                        session_id: currentSessionId
+                        message: formattedMessage,
+                        session_id: currentSessionId,
+                        query_mode: currentQueryMode
                     })
                 });
 
@@ -480,34 +1275,73 @@
             updateSendButton();
         }
 
-        function addMessage(type, content, sources = []) {
+        function addMessage(type, content, sources = [], mode = null) {
             const messagesContainer = document.getElementById('chat-messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
             
+            let modeIndicator = '';
+            if (type === 'user' && mode && mode !== 'general') {
+                const modeLabels = {
+                    'summarize': 'Summarize Mode',
+                    'extract': 'Extract Mode',
+                    'compare': 'Compare Mode',
+                    'explain': 'Explain Mode'
+                };
+                const modeIcons = {
+                    'summarize': '<svg class="message-mode-icon" viewBox="0 0 24 24"><path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></svg>',
+                    'extract': '<svg class="message-mode-icon" viewBox="0 0 24 24"><path d="M15.5,12C18,12 20,14 20,16.5C20,17.38 19.75,18.21 19.31,18.9L22.39,22L21,23.39L17.88,20.32C17.19,20.75 16.37,21 15.5,21C13,21 11,19 11,16.5C11,14 13,12 15.5,12M15.5,14A2.5,2.5 0 0,0 13,16.5A2.5,2.5 0 0,0 15.5,19A2.5,2.5 0 0,0 18,16.5A2.5,2.5 0 0,0 15.5,14Z"/></svg>',
+                    'compare': '<svg class="message-mode-icon" viewBox="0 0 24 24"><path d="M19,3H14.82C14.25,1.44 12.53,0.64 11,1.2C10.14,1.5 9.5,2.16 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z"/></svg>',
+                    'explain': '<svg class="message-mode-icon" viewBox="0 0 24 24"><path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"/></svg>'
+                };
+                modeIndicator = `<div class="message-mode">${modeIcons[mode] || ''}${modeLabels[mode] || mode}</div>`;
+            }
+            
             let sourcesHtml = '';
             if (sources && sources.length > 0) {
-                sourcesHtml = '<div class="message-sources">Sources: ' + 
-                    sources.map(s => `${s.document_title} (similarity: ${(s.similarity_score * 100).toFixed(1)}%)`).join(', ') +
-                    '</div>';
+                const sourceItems = sources.map(s => `
+                    <div class="source-item">
+                        <span class="source-name">${s.document_title}</span>
+                        <span class="source-score">${(s.similarity_score * 100).toFixed(0)}%</span>
+                    </div>
+                `).join('');
+                
+                sourcesHtml = `
+                    <div class="message-sources">
+                        <div class="sources-header">
+                            <span>Sources (${sources.length})</span>
+                        </div>
+                        <div class="sources-list">
+                            ${sourceItems}
+                        </div>
+                    </div>
+                `;
             }
             
             messageDiv.innerHTML = `
+                ${modeIndicator}
                 <div class="message-content">${content}</div>
                 ${sourcesHtml}
             `;
             
             messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Smooth scroll to bottom with a slight delay to ensure content is rendered
+            setTimeout(() => {
+                messagesContainer.scrollTo({
+                    top: messagesContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
         }
 
         function updateSendButton() {
-            const sendBtn = document.getElementById('send-btn');
+            const sendBtn = document.getElementById('send-button');
             if (isProcessing) {
                 sendBtn.innerHTML = '<div class="loading"></div>';
                 sendBtn.disabled = true;
             } else {
-                sendBtn.innerHTML = 'Send';
+                sendBtn.innerHTML = 'Send ✨';
                 sendBtn.disabled = false;
             }
         }
@@ -522,13 +1356,22 @@
 
         function showAlert(message, type) {
             const alertDiv = document.createElement('div');
-            alertDiv.className = type;
+            alertDiv.className = `notification ${type}`;
             alertDiv.textContent = message;
             
-            document.body.insertBefore(alertDiv, document.body.firstChild);
+            document.body.appendChild(alertDiv);
             
+            // Show the notification
             setTimeout(() => {
-                alertDiv.remove();
+                alertDiv.classList.add('show');
+            }, 100);
+            
+            // Hide and remove the notification
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 300);
             }, 5000);
         }
 
@@ -589,7 +1432,7 @@
                 showError('Error clearing vector database: ' + error.message);
             } finally {
                 clearBtn.disabled = false;
-                clearBtn.textContent = '🗑️ Clear Vector Database';
+                clearBtn.textContent = 'Clear Vector Database';
             }
         }
 
@@ -625,7 +1468,7 @@
                 showError('Error rebuilding vector store: ' + error.message);
             } finally {
                 rebuildBtn.disabled = false;
-                rebuildBtn.textContent = '🔄 Rebuild Vector Store';
+                rebuildBtn.textContent = 'Rebuild Vector Store';
             }
         }
 
