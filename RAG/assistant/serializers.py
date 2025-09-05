@@ -83,6 +83,7 @@ class ChatQuerySerializer(serializers.Serializer):
     """Serializer for chat queries"""
     message = serializers.CharField(max_length=2000)
     session_id = serializers.UUIDField(required=False, allow_null=True)
+    query_mode = serializers.CharField(max_length=50, required=False, default='general')
 
 
 class ChatResponseSerializer(serializers.Serializer):
