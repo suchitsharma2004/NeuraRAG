@@ -3,8 +3,12 @@ Django>=4.2.0,<5.0.0
 djangorestframework>=3.14.0
 django-cors-headers>=4.0.0
 
-# Database (uncomment if using PostgreSQL)
-# psycopg2-binary>=2.9.0
+# Database (PostgreSQL for production)
+psycopg2-binary>=2.9.0
+dj-database-url>=2.0.0
+
+# Production server
+gunicorn>=21.0.0
 
 # Background task processing
 celery>=5.3.0
