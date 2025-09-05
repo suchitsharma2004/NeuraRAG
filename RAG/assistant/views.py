@@ -271,6 +271,11 @@ class ChatAPIView(APIView):
         
             message = serializer.validated_data['message']
             session_id = serializer.validated_data.get('session_id')
+            query_mode = serializer.validated_data.get('query_mode', 'general')
+            
+            # Debug logging
+            print(f"Processing query with mode: {query_mode}")
+            print(f"Query: {message}")
             
             # Get or create session
             if session_id:
@@ -387,6 +392,11 @@ def chat_interface(request):
     """Serve the chat interface HTML"""
     from django.shortcuts import render
     return render(request, 'chat.html')
+
+def index(request):
+    """Serve the home/index page"""
+    from django.shortcuts import render
+    return render(request, 'index.html')
 
 @csrf_exempt  
 def clear_vector_database(request):
