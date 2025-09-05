@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 import os
 from pathlib import Path
+import dj_database_url
 
 # Load environment variables from .env file
 try:
@@ -29,12 +30,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1x2i*f==tzwgb911!l*zuo%ou_3_hjr1%!p-cb$4e(j1kt^8dc'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-1x2i*f==tzwgb911!l*zuo%ou_3_hjr1%!p-cb$4e(j1kt^8dc')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('ALLOWED_HOSTS', '').split(',')
 
 
 # Application definition
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For static files on Render
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -86,12 +88,19 @@ WSGI_APPLICATION = 'RAG.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Use environment variable DATABASE_URL if available (for production)
+# Otherwise, fall back to SQLite for development
+if 'DATABASE_URL' in os.environ:
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ['DATABASE_URL'])
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -128,7 +137,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Additional directories to search for static files
@@ -136,19 +145,25 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# WhiteNoise configuration for static files on Render
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-]
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+    ]
 
 # Media files
 MEDIA_URL = '/media/'
@@ -171,8 +186,9 @@ REST_FRAMEWORK = {
 }
 
 # Celery Configuration (for background tasks)
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+# Use Redis URL from environment or fallback to local Redis
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -180,8 +196,17 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # RAG Configuration
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Load from environment variables
-FAISS_INDEX_PATH = BASE_DIR / 'data' / 'faiss_index'
-DOCUMENTS_STORAGE_PATH = BASE_DIR / 'data' / 'documents'
+
+# Use persistent disk on Render for data storage
+if 'RENDER' in os.environ:
+    # On Render, use persistent disk paths
+    FAISS_INDEX_PATH = Path('/opt/render/project/data/faiss_index')
+    DOCUMENTS_STORAGE_PATH = Path('/opt/render/project/data/documents')
+else:
+    # Local development paths
+    FAISS_INDEX_PATH = BASE_DIR / 'data' / 'faiss_index'
+    DOCUMENTS_STORAGE_PATH = BASE_DIR / 'data' / 'documents'
+
 EMBEDDING_MODEL = 'all-MiniLM-L6-v2'  # sentence-transformers model
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
@@ -193,3 +218,15 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 # Create data directories
 os.makedirs(FAISS_INDEX_PATH, exist_ok=True)
 os.makedirs(DOCUMENTS_STORAGE_PATH, exist_ok=True)
+
+# Security settings for production
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_REDIRECT_EXEMPT = []
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    X_FRAME_OPTIONS = 'DENY'
