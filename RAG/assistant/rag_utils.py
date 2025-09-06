@@ -45,22 +45,87 @@ class EmbeddingManager:
             # Clean text for Google API
             cleaned_text = self._clean_text_for_api(text)
             
-            response = genai.embed_content(
-                model="models/embedding-001",
-                content=cleaned_text
-            )
-            
-            # Validate response
-            if "embedding" not in response:
-                print(f"Warning: Invalid response from Google API: {response}")
+            # Additional validation after cleaning
+            if len(cleaned_text) < 3:
+                print(f"Warning: Text too short after cleaning: '{cleaned_text}'")
                 return np.zeros(self._dimension, dtype=np.float32)
             
-            embedding = response["embedding"]
-            if len(embedding) != self._dimension:
-                print(f"Warning: Unexpected embedding dimension: {len(embedding)} vs {self._dimension}")
-                return np.zeros(self._dimension, dtype=np.float32)
+            # Add retry logic with exponential backoff
+            import time
+            max_retries = 3
+            base_delay = 1.0
             
-            return np.array(embedding, dtype=np.float32)
+            for attempt in range(max_retries):
+                try:
+                    # Add rate limiting for production
+                    if 'RENDER' in os.environ and attempt > 0:
+                        time.sleep(0.5)  # Rate limit in production
+                    
+                    response = genai.embed_content(
+                        model="models/embedding-001",
+                        content=cleaned_text,
+                        task_type="retrieval_document"  # Specify task type
+                    )
+                    
+                    # Validate response structure
+                    if not response or not isinstance(response, dict):
+                        print(f"Warning: Invalid response type from Google API: {type(response)}")
+                        if attempt < max_retries - 1:
+                            time.sleep(base_delay * (2 ** attempt))
+                            continue
+                        return np.zeros(self._dimension, dtype=np.float32)
+                    
+                    if "embedding" not in response:
+                        print(f"Warning: No 'embedding' key in response: {list(response.keys()) if isinstance(response, dict) else response}")
+                        if attempt < max_retries - 1:
+                            time.sleep(base_delay * (2 ** attempt))
+                            continue
+                        return np.zeros(self._dimension, dtype=np.float32)
+                    
+                    embedding = response["embedding"]
+                    
+                    # Validate embedding structure
+                    if not isinstance(embedding, list) or len(embedding) != self._dimension:
+                        print(f"Warning: Invalid embedding format or dimension: type={type(embedding)}, len={len(embedding) if hasattr(embedding, '__len__') else 'N/A'}")
+                        if attempt < max_retries - 1:
+                            time.sleep(base_delay * (2 ** attempt))
+                            continue
+                        return np.zeros(self._dimension, dtype=np.float32)
+                    
+                    # Convert to numpy array and validate values
+                    embedding_array = np.array(embedding, dtype=np.float32)
+                    if np.any(np.isnan(embedding_array)) or np.any(np.isinf(embedding_array)):
+                        print("Warning: Invalid embedding values (NaN or Inf)")
+                        if attempt < max_retries - 1:
+                            time.sleep(base_delay * (2 ** attempt))
+                            continue
+                        return np.zeros(self._dimension, dtype=np.float32)
+                    
+                    return embedding_array
+                    
+                except Exception as api_error:
+                    error_str = str(api_error).lower()
+                    print(f"API attempt {attempt + 1}/{max_retries} failed: {api_error}")
+                    
+                    # Check if this is a retryable error
+                    retryable_errors = [
+                        'timeout', 'rate limit', 'quota', 'temporary', 
+                        'service unavailable', 'internal error', 'network'
+                    ]
+                    
+                    is_retryable = any(err in error_str for err in retryable_errors)
+                    
+                    if attempt < max_retries - 1 and is_retryable:
+                        retry_delay = base_delay * (2 ** attempt)
+                        print(f"Retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        print(f"Not retrying error (final attempt or non-retryable): {api_error}")
+                        break
+            
+            # If we get here, all attempts failed
+            return np.zeros(self._dimension, dtype=np.float32)
             
         except Exception as e:
             print(f"Error generating embedding: {e}")
@@ -77,19 +142,38 @@ class EmbeddingManager:
         # Remove excessive whitespace
         text = " ".join(text.split())
         
-        # Limit length (Google API has limits)
-        max_length = 20000  # Conservative limit
+        # Limit length (Google API has stricter limits in production)
+        max_length = 8000  # More conservative limit for production environments
         if len(text) > max_length:
             text = text[:max_length]
         
         # Remove problematic characters that might cause API issues
-        # Keep only printable ASCII and common Unicode characters
+        # Only keep basic ASCII printable characters and common whitespace
+        import string
+        import re
+        
+        # First pass: only keep safe characters
+        allowed_chars = set(string.ascii_letters + string.digits + string.punctuation + ' \n\t')
         cleaned = ""
         for char in text:
-            if char.isprintable() or char.isspace():
+            if char in allowed_chars:
                 cleaned += char
+            elif char.isspace():
+                cleaned += " "  # Replace any other whitespace with regular space
         
-        return cleaned.strip()
+        # Second pass: remove control characters and normalize
+        cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', ' ', cleaned)  # Remove control chars
+        cleaned = re.sub(r'\s+', ' ', cleaned)  # Normalize whitespace
+        cleaned = re.sub(r'[^\x20-\x7E\s]', ' ', cleaned)  # Remove non-ASCII printable
+        
+        # Final cleanup
+        cleaned = cleaned.strip()
+        
+        # Ensure minimum length
+        if len(cleaned) < 3:
+            return "placeholder text"  # Fallback for very short text
+        
+        return cleaned
     
     def generate_embeddings(self, texts: List[str]) -> np.ndarray:
         """Generate embeddings for multiple texts"""
@@ -379,12 +463,16 @@ class PineconeVectorStore:
         try:
             print("Rebuilding Pinecone index from database...")
             
-            # Clear existing data
+            # Clear existing data (with proper error handling)
             self.clear_all_data()
             
             # Get all processed documents with chunks
             processed_documents = Document.objects.filter(processed=True, total_chunks__gt=0)
             total_chunks_added = 0
+            
+            if not processed_documents.exists():
+                print("No processed documents found to rebuild index")
+                return 0
             
             # Batch upsert for efficiency
             batch_size = 50  # Reduced for API rate limits
@@ -396,6 +484,11 @@ class PineconeVectorStore:
                     # Regenerate embedding with Google API (768 dimensions)
                     try:
                         new_embedding = self.embedding_manager.generate_embedding(chunk.text)
+                        
+                        # Skip if embedding generation failed
+                        if np.all(new_embedding == 0):
+                            print(f"Skipping chunk {chunk.id}: embedding generation failed")
+                            continue
                         
                         # Update the chunk with new embedding
                         chunk.embedding_vector = new_embedding.tolist()
@@ -417,10 +510,15 @@ class PineconeVectorStore:
                         
                         # Batch upsert when batch is full
                         if len(vectors_to_upsert) >= batch_size:
-                            self.index.upsert(vectors=vectors_to_upsert)
-                            total_chunks_added += len(vectors_to_upsert)
-                            vectors_to_upsert = []
-                            print(f"Processed {total_chunks_added} chunks...")
+                            try:
+                                self.index.upsert(vectors=vectors_to_upsert)
+                                total_chunks_added += len(vectors_to_upsert)
+                                vectors_to_upsert = []
+                                print(f"Processed {total_chunks_added} chunks...")
+                            except Exception as upsert_error:
+                                print(f"Error upserting batch: {upsert_error}")
+                                # Continue with next batch
+                                vectors_to_upsert = []
                     
                     except Exception as e:
                         print(f"Error processing chunk {chunk.id}: {e}")
@@ -428,8 +526,11 @@ class PineconeVectorStore:
             
             # Upsert remaining vectors
             if vectors_to_upsert:
-                self.index.upsert(vectors=vectors_to_upsert)
-                total_chunks_added += len(vectors_to_upsert)
+                try:
+                    self.index.upsert(vectors=vectors_to_upsert)
+                    total_chunks_added += len(vectors_to_upsert)
+                except Exception as final_upsert_error:
+                    print(f"Error upserting final batch: {final_upsert_error}")
             
             print(f"Rebuilt Pinecone index with {total_chunks_added} chunks from {processed_documents.count()} documents")
             return total_chunks_added
@@ -443,10 +544,31 @@ class PineconeVectorStore:
         try:
             print("Clearing all Pinecone index data...")
             
-            # Delete all vectors in the index
-            self.index.delete(delete_all=True)
+            # Try to get index stats first to check if it exists and has data
+            try:
+                stats = self.index.describe_index_stats()
+                total_vectors = stats.get('total_vector_count', 0)
+                print(f"Index currently has {total_vectors} vectors")
+                
+                if total_vectors > 0:
+                    # Delete all vectors in the index
+                    self.index.delete(delete_all=True)
+                    print("Successfully cleared all Pinecone index data")
+                else:
+                    print("Index is already empty")
+                    
+            except Exception as stats_error:
+                print(f"Could not get index stats: {stats_error}")
+                # Try to delete anyway, but catch the error
+                try:
+                    self.index.delete(delete_all=True)
+                    print("Successfully cleared all Pinecone index data")
+                except Exception as delete_error:
+                    if "not found" in str(delete_error).lower() or "404" in str(delete_error):
+                        print("Index/namespace is already empty or doesn't exist")
+                    else:
+                        raise delete_error
             
-            print("Successfully cleared all Pinecone index data")
             return True
             
         except Exception as e:
