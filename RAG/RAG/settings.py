@@ -30,7 +30,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-1x2i*f==tzwgb911!l*zuo%ou_3_hjr1%!p-cb$4e(j1kt^8dc')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("DJANGO_SECRET_KEY environment variable is required")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
@@ -88,19 +90,20 @@ WSGI_APPLICATION = 'RAG.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Use environment variable DATABASE_URL if available (for production)
-# Otherwise, fall back to SQLite for development
-if 'DATABASE_URL' in os.environ:
-    DATABASES = {
-        'default': dj_database_url.parse(os.environ['DATABASE_URL'])
+# For completely free deployment, use SQLite even in production
+# Note: This is not recommended for high-traffic production apps
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
+
+# Uncomment below if you want to use PostgreSQL (paid) instead
+# if 'DATABASE_URL' in os.environ:
+#     DATABASES = {
+#         'default': dj_database_url.parse(os.environ['DATABASE_URL'])
+#     }
 
 
 # Password validation
@@ -197,14 +200,25 @@ CELERY_TIMEZONE = TIME_ZONE
 # RAG Configuration
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Load from environment variables
 
-# Use persistent disk on Render for data storage
+# Vector Database Configuration
+USE_PINECONE = os.getenv('USE_PINECONE', 'True').lower() == 'true'
+
+if USE_PINECONE:
+    # Pinecone Configuration (for production/cloud vector storage)
+    PINECONE_API_KEY = os.getenv('PINECONE_API_KEY', '')
+    PINECONE_INDEX_NAME = os.getenv('PINECONE_INDEX_NAME', 'neurarag-vectors')
+    PINECONE_ENVIRONMENT = os.getenv('PINECONE_ENVIRONMENT', 'us-east-1')  # AWS region for NVIDIA hosted
+else:
+    # Local FAISS Configuration (only when not using Pinecone)
+    if 'RENDER' in os.environ:
+        FAISS_INDEX_PATH = Path('/opt/render/project/data/faiss_index')
+    else:
+        FAISS_INDEX_PATH = BASE_DIR / 'data' / 'faiss_index'
+
+# Document storage (always use local/render storage for uploaded files)
 if 'RENDER' in os.environ:
-    # On Render, use persistent disk paths
-    FAISS_INDEX_PATH = Path('/opt/render/project/data/faiss_index')
     DOCUMENTS_STORAGE_PATH = Path('/opt/render/project/data/documents')
 else:
-    # Local development paths
-    FAISS_INDEX_PATH = BASE_DIR / 'data' / 'faiss_index'
     DOCUMENTS_STORAGE_PATH = BASE_DIR / 'data' / 'documents'
 
 EMBEDDING_MODEL = 'all-MiniLM-L6-v2'  # sentence-transformers model
@@ -216,7 +230,12 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 
 # Create data directories
-os.makedirs(FAISS_INDEX_PATH, exist_ok=True)
+# Only create FAISS directory if not using Pinecone
+if not USE_PINECONE:
+    if 'FAISS_INDEX_PATH' in locals():
+        os.makedirs(FAISS_INDEX_PATH, exist_ok=True)
+
+# Always create documents directory for uploaded files
 os.makedirs(DOCUMENTS_STORAGE_PATH, exist_ok=True)
 
 # Security settings for production
