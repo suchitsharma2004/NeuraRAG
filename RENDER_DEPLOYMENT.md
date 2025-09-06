@@ -31,25 +31,43 @@ git push origin main
 2. Sign up/sign in with your GitHub account
 3. Connect your GitHub account to Render
 
-### 3. Deploy Your Application
+### 3. Deploy Your Application (Web Service)
 
-1. **Connect Repository:**
+1. **Create Web Service:**
    - Click "New +" in your Render dashboard
-   - Select "Blueprint"
+   - Select "Web Service"
    - Connect your GitHub repository: `RAG_prototype`
-   - Render will automatically detect your `render.yaml` file
+   - Configure the following settings:
+     - **Root Directory:** Leave BLANK
+     - **Build Command:** `./build.sh`
+     - **Start Command:** `cd RAG && gunicorn RAG.wsgi:application`
+     - **Environment:** Python 3
 
-2. **Configure Environment Variables:**
+2. **Create PostgreSQL Database:**
+   - Click "New +" in your Render dashboard
+   - Select "PostgreSQL"
+   - Name it: `neurarag-db`
+   - Choose your plan (free tier available)
+
+3. **Configure Environment Variables:**
    
-   Set these required environment variables:
+   Set these required environment variables in your web service:
    ```
-   SECRET_KEY=your-super-secret-django-key-here
+   SECRET_KEY=generate-a-new-secret-key-here
    GEMINI_API_KEY=your-gemini-api-key
    ALLOWED_HOSTS=your-app-name.onrender.com
    DEBUG=False
+   DATABASE_URL=copy-from-your-postgresql-database-internal-url
    ```
+   
+   **Important Security Notes:**
+   - Generate a NEW secret key using: `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
+   - Get DATABASE_URL from your PostgreSQL database's "Internal Database URL"
+   - Replace `your-app-name` with your actual service name
+   
+   **Note:** Replace `your-app-name` with the actual name you choose for your Render service.
 
-3. **Deploy:**
+4. **Deploy:**
    - Click "Create New Blueprint"
    - Render will automatically create:
      - A PostgreSQL database (neurarag-db)
