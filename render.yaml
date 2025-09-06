@@ -9,12 +9,11 @@ services:
         value: False
       - key: DJANGO_SETTINGS_MODULE
         value: RAG.settings
-      - key: DATABASE_URL
-        fromDatabase:
-          name: neurarag-db
-          property: connectionString
 
-  - type: pserv
-    name: neurarag-db
-    env: postgresql
-    plan: starter
+# PostgreSQL database removed for free deployment
+# Uncomment below if you want to add paid PostgreSQL later:
+#
+#  - type: pserv
+#    name: neurarag-db
+#    env: postgresql
+#    plan: starter
