@@ -2,8 +2,9 @@ services:
   - type: web
     name: neurarag
     env: python
+    rootDir: RAG
     buildCommand: "./build.sh"
-    startCommand: "cd RAG && gunicorn RAG.wsgi:application"
+    startCommand: "gunicorn RAG.wsgi:application"
     envVars:
       - key: DEBUG
         value: False
