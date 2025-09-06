@@ -37,15 +37,59 @@ class EmbeddingManager:
     def generate_embedding(self, text: str) -> np.ndarray:
         """Generate embedding for a single text using Google's API"""
         try:
+            # Clean and validate text
+            if not text or not isinstance(text, str):
+                print("Warning: Empty or invalid text for embedding")
+                return np.zeros(self._dimension, dtype=np.float32)
+            
+            # Clean text for Google API
+            cleaned_text = self._clean_text_for_api(text)
+            
             response = genai.embed_content(
                 model="models/embedding-001",
-                content=text
+                content=cleaned_text
             )
-            return np.array(response["embedding"], dtype=np.float32)
+            
+            # Validate response
+            if "embedding" not in response:
+                print(f"Warning: Invalid response from Google API: {response}")
+                return np.zeros(self._dimension, dtype=np.float32)
+            
+            embedding = response["embedding"]
+            if len(embedding) != self._dimension:
+                print(f"Warning: Unexpected embedding dimension: {len(embedding)} vs {self._dimension}")
+                return np.zeros(self._dimension, dtype=np.float32)
+            
+            return np.array(embedding, dtype=np.float32)
+            
         except Exception as e:
             print(f"Error generating embedding: {e}")
+            print(f"Text length: {len(text) if text else 0}")
+            print(f"Text preview: {text[:100] if text else 'None'}...")
             # Return zero vector as fallback
             return np.zeros(self._dimension, dtype=np.float32)
+    
+    def _clean_text_for_api(self, text: str) -> str:
+        """Clean text for Google API compatibility"""
+        if not text:
+            return ""
+        
+        # Remove excessive whitespace
+        text = " ".join(text.split())
+        
+        # Limit length (Google API has limits)
+        max_length = 20000  # Conservative limit
+        if len(text) > max_length:
+            text = text[:max_length]
+        
+        # Remove problematic characters that might cause API issues
+        # Keep only printable ASCII and common Unicode characters
+        cleaned = ""
+        for char in text:
+            if char.isprintable() or char.isspace():
+                cleaned += char
+        
+        return cleaned.strip()
     
     def generate_embeddings(self, texts: List[str]) -> np.ndarray:
         """Generate embeddings for multiple texts"""

@@ -2,6 +2,7 @@ import os
 import re
 from typing import List, Dict
 from pathlib import Path
+import numpy as np
 import PyPDF2
 from docx import Document as DocxDocument
 from django.conf import settings
@@ -174,8 +175,23 @@ class DocumentProcessor:
             chunk_count = 0
             for i, chunk_text in enumerate(chunks):
                 try:
+                    # Validate chunk text
+                    if not chunk_text or len(chunk_text.strip()) < 10:
+                        print(f"Skipping chunk {i}: too short or empty")
+                        continue
+                    
                     # Generate embedding
+                    print(f"Generating embedding for chunk {i+1}/{len(chunks)}")
                     embedding = self.embedding_manager.generate_embedding(chunk_text)
+                    
+                    # Validate embedding
+                    if embedding is None or len(embedding) == 0:
+                        print(f"Skipping chunk {i}: failed to generate embedding")
+                        continue
+                    
+                    # Check if embedding is all zeros (API fallback)
+                    if np.all(embedding == 0):
+                        print(f"Warning: chunk {i} got zero embedding (API error?)")
                     
                     # Create chunk record
                     chunk = DocumentChunk.objects.create(
@@ -188,6 +204,7 @@ class DocumentProcessor:
                     
                 except Exception as e:
                     print(f"Error processing chunk {i} for document {document.title}: {str(e)}")
+                    print(f"Chunk text preview: {chunk_text[:200] if chunk_text else 'None'}...")
                     continue
             
             # Update document
