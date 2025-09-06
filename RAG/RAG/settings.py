@@ -206,6 +206,9 @@ CELERY_TIMEZONE = TIME_ZONE
 # RAG Configuration
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Load from environment variables
 
+# Embedding Configuration (using Google's API)
+EMBEDDING_MODEL = 'models/embedding-001'  # Google's embedding model
+EMBEDDING_DIMENSION = 768  # Google embedding dimension
 # Vector Database Configuration
 USE_PINECONE = os.getenv('USE_PINECONE', 'True').lower() == 'true'
 
@@ -227,7 +230,8 @@ if 'RENDER' in os.environ:
 else:
     DOCUMENTS_STORAGE_PATH = BASE_DIR / 'data' / 'documents'
 
-EMBEDDING_MODEL = 'all-MiniLM-L6-v2'  # sentence-transformers model (lightweight)
+EMBEDDING_MODEL = 'models/embedding-001'  # Google's embedding model
+EMBEDDING_DIMENSION = 768  # Google embedding dimension
 CHUNK_SIZE = 800  # Reduced for memory efficiency
 CHUNK_OVERLAP = 100  # Reduced for memory efficiency
 

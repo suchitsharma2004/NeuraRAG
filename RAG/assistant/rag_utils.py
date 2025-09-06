@@ -3,7 +3,6 @@ import json
 import faiss
 import numpy as np
 from typing import List, Dict, Tuple, Optional
-from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 from django.conf import settings
 from .models import Document, DocumentChunk
@@ -21,33 +20,40 @@ else:
 
 
 class EmbeddingManager:
-    """Manages text embeddings using sentence-transformers"""
+    """Manages text embeddings using Google's Embedding API"""
     
     def __init__(self):
-        self._model = None
-        self._dimension = None
-    
-    @property
-    def model(self):
-        """Lazy load the model to save memory at startup"""
-        if self._model is None:
-            self._model = SentenceTransformer(settings.EMBEDDING_MODEL)
-        return self._model
+        if settings.GEMINI_API_KEY:
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            self._dimension = 768  # Google's embedding-001 model dimension
+        else:
+            raise ValueError("GEMINI_API_KEY is required for embeddings")
     
     @property
     def dimension(self):
-        """Get embedding dimension (lazy loaded)"""
-        if self._dimension is None:
-            self._dimension = self.model.get_sentence_embedding_dimension()
+        """Get embedding dimension"""
         return self._dimension
     
     def generate_embedding(self, text: str) -> np.ndarray:
-        """Generate embedding for a single text"""
-        return self.model.encode([text])[0]
+        """Generate embedding for a single text using Google's API"""
+        try:
+            response = genai.embed_content(
+                model="models/embedding-001",
+                content=text
+            )
+            return np.array(response["embedding"], dtype=np.float32)
+        except Exception as e:
+            print(f"Error generating embedding: {e}")
+            # Return zero vector as fallback
+            return np.zeros(self._dimension, dtype=np.float32)
     
     def generate_embeddings(self, texts: List[str]) -> np.ndarray:
         """Generate embeddings for multiple texts"""
-        return self.model.encode(texts)
+        embeddings = []
+        for text in texts:
+            embedding = self.generate_embedding(text)
+            embeddings.append(embedding)
+        return np.array(embeddings)
 
 
 class FAISSVectorStore:
