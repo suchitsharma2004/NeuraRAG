@@ -343,13 +343,20 @@ class PineconeVectorStore:
             total_chunks_added = 0
             
             # Batch upsert for efficiency
-            batch_size = 100
+            batch_size = 50  # Reduced for API rate limits
             vectors_to_upsert = []
             
             for document in processed_documents:
                 chunks = DocumentChunk.objects.filter(document=document).order_by('chunk_index')
                 for chunk in chunks:
-                    if chunk.embedding_vector:
+                    # Regenerate embedding with Google API (768 dimensions)
+                    try:
+                        new_embedding = self.embedding_manager.generate_embedding(chunk.text)
+                        
+                        # Update the chunk with new embedding
+                        chunk.embedding_vector = new_embedding.tolist()
+                        chunk.save()
+                        
                         metadata = {
                             'chunk_id': str(chunk.id),
                             'document_id': str(chunk.document.id),
@@ -360,7 +367,7 @@ class PineconeVectorStore:
                         
                         vectors_to_upsert.append({
                             'id': str(chunk.id),
-                            'values': chunk.embedding_vector,
+                            'values': new_embedding.tolist(),
                             'metadata': metadata
                         })
                         
@@ -369,6 +376,11 @@ class PineconeVectorStore:
                             self.index.upsert(vectors=vectors_to_upsert)
                             total_chunks_added += len(vectors_to_upsert)
                             vectors_to_upsert = []
+                            print(f"Processed {total_chunks_added} chunks...")
+                    
+                    except Exception as e:
+                        print(f"Error processing chunk {chunk.id}: {e}")
+                        continue
             
             # Upsert remaining vectors
             if vectors_to_upsert:

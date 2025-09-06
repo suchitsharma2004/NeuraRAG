@@ -471,30 +471,18 @@ def rebuild_vector_store(request):
     try:
         from .models import Document
         
-        # Clear the vector store
-        rag_pipeline.vector_store._initialize_empty_index()
+        # Use the proper rebuild method from rag_utils
+        total_chunks_added = rag_pipeline.vector_store.rebuild_from_database()
         
-        # Rebuild from all processed documents
-        processed_docs = Document.objects.filter(processed=True, total_chunks__gt=0)
-        total_chunks_added = 0
-        documents_processed = 0
-        
-        for document in processed_docs:
-            chunks_added = rag_pipeline.add_document_chunks(document)
-            if chunks_added > 0:
-                total_chunks_added += chunks_added
-                documents_processed += 1
-                print(f"Added {chunks_added} chunks from document: {document.title}")
-        
-        # Save the rebuilt index
-        rag_pipeline.vector_store.save_index()
+        # Count processed documents
+        documents_processed = Document.objects.filter(processed=True, total_chunks__gt=0).count()
         
         return JsonResponse({
             'success': True,
             'message': f'Vector store rebuilt successfully',
             'documents_processed': documents_processed,
             'total_chunks_added': total_chunks_added,
-            'final_vector_store_size': rag_pipeline.vector_store.index.ntotal if rag_pipeline.vector_store.index else 0
+            'vector_store_type': 'Pinecone' if rag_pipeline.use_pinecone else 'FAISS'
         })
         
     except Exception as e:
