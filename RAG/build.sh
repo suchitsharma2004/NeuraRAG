@@ -12,5 +12,5 @@ python manage.py collectstatic --no-input
 python manage.py migrate
 
 # Create data directories for RAG functionality
-mkdir -p data/faiss_index
+# Only create documents directory - we're using Pinecone for vectors
 mkdir -p data/documents
