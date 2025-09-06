@@ -3,7 +3,7 @@ services:
     name: neurarag
     env: python
     rootDir: RAG
-    buildCommand: "./build.sh"
+    buildCommand: "chmod +x build.sh && ./build.sh"
     startCommand: "gunicorn RAG.wsgi:application"
     envVars:
       - key: DEBUG
