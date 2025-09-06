@@ -4,7 +4,7 @@ services:
     env: python
     rootDir: RAG
     buildCommand: "chmod +x build.sh && ./build.sh"
-    startCommand: "gunicorn RAG.wsgi:application"
+    startCommand: "gunicorn RAG.wsgi:application --workers=1 --threads=2 --timeout=120 --max-requests=1000 --max-requests-jitter=100"
     envVars:
       - key: DEBUG
         value: False

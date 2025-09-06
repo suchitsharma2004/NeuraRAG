@@ -37,7 +37,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*'] if DEBUG else os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = ['*'] if DEBUG else ['neurarag.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -227,9 +227,9 @@ if 'RENDER' in os.environ:
 else:
     DOCUMENTS_STORAGE_PATH = BASE_DIR / 'data' / 'documents'
 
-EMBEDDING_MODEL = 'all-MiniLM-L6-v2'  # sentence-transformers model
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 200
+EMBEDDING_MODEL = 'all-MiniLM-L6-v2'  # sentence-transformers model (lightweight)
+CHUNK_SIZE = 800  # Reduced for memory efficiency
+CHUNK_OVERLAP = 100  # Reduced for memory efficiency
 
 # File Upload Settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB

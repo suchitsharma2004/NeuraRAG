@@ -24,8 +24,22 @@ class EmbeddingManager:
     """Manages text embeddings using sentence-transformers"""
     
     def __init__(self):
-        self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
-        self.dimension = self.model.get_sentence_embedding_dimension()
+        self._model = None
+        self._dimension = None
+    
+    @property
+    def model(self):
+        """Lazy load the model to save memory at startup"""
+        if self._model is None:
+            self._model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        return self._model
+    
+    @property
+    def dimension(self):
+        """Get embedding dimension (lazy loaded)"""
+        if self._dimension is None:
+            self._dimension = self.model.get_sentence_embedding_dimension()
+        return self._dimension
     
     def generate_embedding(self, text: str) -> np.ndarray:
         """Generate embedding for a single text"""
