@@ -10,12 +10,11 @@
 
 A sophisticated Retrieval-Augmented Generation (RAG) chatbot application built with Django, featuring a modern UI, intelligent document processing, and advanced query capabilities. NeuraRAG combines the power of Google's Gemini AI with Pinecone vector database for lightning-fast, context-aware responses.
 
-## 📸 Screenshots
 <img width="1440" height="900" alt="Screenshot 2025-09-07 at 4 37 15 PM" src="https://github.com/user-attachments/assets/ef534bf4-6b24-4e97-bde9-0cae5010ff22" />
 
+<img width="1440" height="900" alt="Screenshot 2025-09-07 at 4 40 22 PM" src="https://github.com/user-attachments/assets/10059cf5-64ac-433d-9cfe-d40583e9f6dc" />
 
-<!-- Add your screenshots here -->
-*Coming soon - Add screenshots of your deployed application*
+
 
 ## ✨ Features
 
