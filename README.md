@@ -1,35 +1,79 @@
-# RAG Assistant - Retrieval Augmented Generation Chatbot
+# 🧠 NeuraRAG - Advanced RAG Chatbot with Modern UI
 
-A Django-based RAG (Retrieval-Augmented Generation) chatbot that allows users to upload documents and ask questions about their content using AI.
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
+[![Django](https://img.shields.io/badge/Django-4.2+-green.svg)](https://djangoproject.com)
+[![Google Gemini](https://img.shields.io/badge/Google-Gemini%20API-orange.svg)](https://ai.google.dev)
+[![Pinecone](https://img.shields.io/badge/Pinecone-Vector%20DB-purple.svg)](https://pinecone.io)
+[![Deployed on Render](https://img.shields.io/badge/Deployed%20on-Render-success.svg)](https://render.com)
 
-## Features
+> **🚀 Live Demo**: [https://neurarag.onrender.com](https://neurarag.onrender.com)
 
-- 📄 **Document Upload**: Support for PDF, DOCX, and TXT files
-- 🔍 **Smart Chunking**: Intelligent text splitting with overlap for better context
-- 🤖 **AI-Powered Responses**: Uses Google Gemini for natural language responses
-- 🔍 **Vector Search**: FAISS-based semantic search for relevant document chunks
-- 💬 **Chat Interface**: Web-based chat interface for natural conversations
-- 🔄 **Background Processing**: Async document processing with Celery
-- 📊 **Admin Interface**: Django admin for managing documents and chats
-- 🌐 **REST API**: Complete API for integration with other applications
+A sophisticated Retrieval-Augmented Generation (RAG) chatbot application built with Django, featuring a modern UI, intelligent document processing, and advanced query capabilities. NeuraRAG combines the power of Google's Gemini AI with Pinecone vector database for lightning-fast, context-aware responses.
 
-## Architecture
+## 📸 Screenshots
 
+<!-- Add your screenshots here -->
+*Coming soon - Add screenshots of your deployed application*
+
+## ✨ Features
+
+### 🎯 Core Functionality
+- **📄 Multi-Format Document Support**: Upload PDF, DOCX, and TXT files
+- **🧠 Intelligent Text Processing**: Advanced chunking with semantic overlap
+- **🔍 Vector-Based Search**: Powered by Pinecone for lightning-fast similarity search
+- **💬 Contextual Chat**: Google Gemini 2.5 Flash for human-like responses
+- **📊 Real-time Processing**: Background document processing with Celery
+
+### 🎨 Modern User Experience
+- **🌟 Beautiful UI**: Modern, responsive design with gradient backgrounds
+- **📱 Mobile-Friendly**: Fully responsive across all devices
+- **⚡ Real-time Updates**: Live processing status and chat updates
+- **🎭 Interactive Elements**: Smooth animations and transitions
+- **🌙 Clean Interface**: Intuitive navigation and user-friendly design
+
+### 🔧 Advanced Technical Features
+- **☁️ Cloud-First Architecture**: Deployed on Render with free tier optimization
+- **🔗 API-First Design**: RESTful APIs for all operations
+- **📈 Scalable Vector Storage**: Pinecone integration for production workloads
+- **🛡️ Robust Error Handling**: Production-ready error recovery and retry logic
+- **🚀 Performance Optimized**: Memory-efficient processing for large documents
+
+## 🏗️ Architecture
+
+```mermaid
+graph TB
+    A[User Interface] --> B[Django REST API]
+    B --> C[Document Processor]
+    B --> D[RAG Pipeline]
+    C --> E[Google Embeddings API]
+    C --> F[Pinecone Vector DB]
+    D --> G[Google Gemini LLM]
+    D --> F
+    B --> H[Celery Workers]
+    H --> I[Redis Queue]
 ```
-User uploads document → Text extraction → Chunking → Embedding generation → FAISS vector store
-                                                                               ↓
-User asks question → Query embedding → Vector search → Retrieved chunks → LLM (Gemini) → Response
-```
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Installation
+### 🌐 Try the Live Demo
+Visit [https://neurarag.onrender.com](https://neurarag.onrender.com) to try NeuraRAG without any setup!
 
+### 🛠️ Local Development
+
+#### Prerequisites
+- Python 3.9+
+- Git
+- Google AI API Key
+- Pinecone API Key
+
+#### 1. Clone the Repository
 ```bash
-# Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/yourusername/RAG_prototype.git
 cd RAG_prototype
+```
 
+#### 2. Set Up Environment
+```bash
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -38,46 +82,93 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configuration
+#### 3. Configure Environment Variables
+Create a `.env` file in the project root:
+```env
+# Django Configuration
+DJANGO_SECRET_KEY=your-secret-key-here
+DEBUG=True
 
-```bash
-# Copy environment file
-cp .env.example .env
+# Google AI Configuration
+GEMINI_API_KEY=your-google-ai-api-key
 
-# Edit .env and set your Gemini API key
-# Get API key from: https://makersuite.google.com/app/apikey
-nano .env
+# Pinecone Configuration
+USE_PINECONE=True
+PINECONE_API_KEY=your-pinecone-api-key
+PINECONE_INDEX_NAME=your-index-name
+
+# Redis Configuration (for Celery)
+REDIS_URL=redis://localhost:6379/0
 ```
 
-### 3. Database Setup
-
+#### 4. Set Up Database
 ```bash
 cd RAG
 python manage.py migrate
-python manage.py createsuperuser
+python manage.py collectstatic --noinput
 ```
 
-### 4. Start the Application
-
+#### 5. Start the Application
 ```bash
-# Start Django development server
+# Start Django server
 python manage.py runserver
 
-# In another terminal, start Celery worker (optional, for background processing)
-cd RAG
+# In another terminal, start Celery worker (optional for async processing)
 celery -A RAG worker --loglevel=info
-
-# In another terminal, start Redis (required for Celery)
-redis-server
 ```
 
-### 5. Access the Application
+## 📚 Usage Guide
 
-- **Chat Interface**: http://localhost:8000/
-- **Django Admin**: http://localhost:8000/admin/
-- **API Documentation**: http://localhost:8000/api/
+### 📄 Document Upload
+1. **Navigate to Documents**: Click on "Manage Documents" from the main page
+2. **Upload File**: Click "Upload Document" and select your PDF, DOCX, or TXT file
+3. **Wait for Processing**: The system will automatically chunk and embed your document
+4. **Check Status**: Monitor processing progress in real-time
 
-## Usage
+### 💬 Chat with Documents
+1. **Go to Chat**: Click "Start Chatting" from the main page
+2. **Ask Questions**: Type any question related to your uploaded documents
+3. **Get Contextual Answers**: Receive AI-generated responses with source citations
+4. **Continue Conversation**: Build on previous questions for deeper insights
+
+### 🔧 Advanced Features
+- **Multi-Document Search**: Ask questions across multiple uploaded documents
+- **Source Citations**: Every answer includes references to source documents
+- **Document Management**: View, delete, and reprocess documents as needed
+- **Vector Store Management**: Clear and rebuild your knowledge base
+
+## 🚀 Deployment on Render
+
+This project is optimized for deployment on Render's free tier. Here's how to deploy your own instance:
+
+### 1. Fork the Repository
+Fork this repository to your GitHub account.
+
+### 2. Create Render Services
+
+#### Web Service
+- **Repository**: Connect your forked repository
+- **Build Command**: `./build.sh`
+- **Start Command**: `gunicorn --bind 0.0.0.0:$PORT RAG.wsgi:application --workers 1 --worker-class sync --worker-connections 1000 --max-requests 1000 --timeout 120 --keep-alive 2 --preload`
+- **Environment**: Python 3
+
+#### Redis Service (Optional)
+- Create a Redis instance for Celery background processing
+
+### 3. Configure Environment Variables
+Set the following environment variables in Render:
+```
+DJANGO_SECRET_KEY=your-secret-key
+DEBUG=False
+GEMINI_API_KEY=your-google-ai-key
+PINECONE_API_KEY=your-pinecone-key
+PINECONE_INDEX_NAME=your-index-name
+USE_PINECONE=True
+REDIS_URL=your-redis-url
+```
+
+### 4. Deploy
+Your application will automatically deploy and be available at your Render URL!
 
 ### Web Interface
 
@@ -106,58 +197,102 @@ curl -X POST http://localhost:8000/api/chat/ \
   -d '{"message": "What is this document about?"}'
 ```
 
-#### Get Documents
+## 🛠️ Tech Stack
 
-```bash
-curl http://localhost:8000/api/documents/
+### Backend
+- **🐍 Django 4.2+**: Web framework and REST API
+- **🔄 Django REST Framework**: API development
+- **📊 Celery**: Asynchronous task processing
+- **📚 SQLite**: Database (development) / PostgreSQL (production option)
+
+### AI & ML
+- **🤖 Google Gemini 2.5 Flash**: Large Language Model
+- **🧠 Google Embeddings API**: Text embeddings generation
+- **🔍 Pinecone**: Vector database for similarity search
+- **📐 NumPy**: Numerical computations
+
+### Frontend
+- **🎨 Modern CSS**: Custom styling with gradients and animations
+- **📱 Responsive Design**: Mobile-first approach
+- **⚡ JavaScript**: Dynamic UI interactions
+- **🎭 Font Awesome**: Icon library
+
+### Infrastructure
+- **☁️ Render**: Cloud deployment platform
+- **📮 Redis**: Message broker for Celery
+- **🔧 Gunicorn**: WSGI HTTP Server
+- **📁 WhiteNoise**: Static file serving
+
+## 📁 Project Structure
+
+```
+RAG_prototype/
+├── RAG/                          # Django project root
+│   ├── RAG/                      # Main Django app
+│   │   ├── settings.py          # Configuration
+│   │   ├── urls.py              # URL routing
+│   │   └── wsgi.py              # WSGI application
+│   └── assistant/               # Main application
+│       ├── models.py            # Database models
+│       ├── views.py             # API views
+│       ├── rag_utils.py         # RAG pipeline
+│       ├── document_utils.py    # Document processing
+│       ├── tasks.py             # Celery tasks
+│       └── templates/           # HTML templates
+├── requirements.txt             # Python dependencies
+├── build.sh                     # Render build script
+├── render.yaml                  # Render configuration
+└── README.md                    # This file
 ```
 
-## API Endpoints
+## 🤝 API Documentation
 
-### Documents
-- `GET /api/documents/` - List all documents
-- `POST /api/documents/` - Upload a new document
-- `GET /api/documents/{id}/` - Get document details
-- `DELETE /api/documents/{id}/` - Delete a document
-- `GET /api/documents/{id}/chunks/` - Get document chunks
-- `GET /api/documents/{id}/processing_status/` - Check processing status
-
-### Chat
-- `POST /api/chat/` - Send a chat message
-- `GET /api/chat-sessions/` - List chat sessions
-- `POST /api/chat-sessions/` - Create new chat session
-- `GET /api/chat-sessions/{id}/messages/` - Get session messages
-
-### Other
-- `POST /api/search/` - Search across documents
-- `GET /api/stats/` - Get usage statistics
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GEMINI_API_KEY` | Google Gemini API key | Required |
-| `REDIS_URL` | Redis connection URL | `redis://localhost:6379/0` |
-| `DEBUG` | Django debug mode | `True` |
-| `CHUNK_SIZE` | Text chunk size | `1000` |
-| `CHUNK_OVERLAP` | Overlap between chunks | `200` |
-| `EMBEDDING_MODEL` | Sentence transformer model | `all-MiniLM-L6-v2` |
-
-### Django Settings
-
-Key settings in `RAG/settings.py`:
-
-```python
-# RAG Configuration
-GEMINI_API_KEY = ""  # Set this with your API key
-FAISS_INDEX_PATH = BASE_DIR / 'data' / 'faiss_index'
-DOCUMENTS_STORAGE_PATH = BASE_DIR / 'data' / 'documents'
-EMBEDDING_MODEL = 'all-MiniLM-L6-v2'
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 200
+### Document Management
+```http
+GET /api/documents/                    # List all documents
+POST /api/documents/                   # Upload new document
+GET /api/documents/{id}/               # Get document details
+DELETE /api/documents/{id}/            # Delete document
+GET /api/documents/{id}/chunks/        # Get document chunks
 ```
+
+### Chat Interface
+```http
+GET /api/chat-sessions/                # List chat sessions
+POST /api/chat-sessions/               # Create new session
+POST /api/chat-sessions/{id}/send_message/  # Send message
+```
+
+### Vector Database
+```http
+POST /api/rebuild-vector-db/           # Rebuild vector database
+POST /api/clear-vector-db/             # Clear all vectors
+```
+
+## 🔒 Security Features
+
+- **🛡️ CSRF Protection**: Built-in Django CSRF middleware
+- **🔐 Environment Variables**: Sensitive data stored securely
+- **🌐 CORS Configuration**: Proper cross-origin resource sharing
+- **📝 Input Validation**: Comprehensive input sanitization
+- **🔄 Rate Limiting**: API rate limiting for production use
+
+## 🎯 Performance Optimizations
+
+### Memory Efficiency
+- **📊 Chunking Strategy**: Optimized text chunking for better memory usage
+- **🔄 Batch Processing**: Efficient batch operations for large documents
+- **🧹 Garbage Collection**: Automatic memory cleanup
+
+### API Optimization
+- **⏱️ Rate Limiting**: Respect API limits with intelligent backoff
+- **🔄 Retry Logic**: Robust error handling with exponential backoff
+- **📦 Caching**: Efficient caching strategies for embeddings
+
+### Production Ready
+- **🔧 Gunicorn Configuration**: Optimized for Render's free tier
+- **📈 Monitoring**: Comprehensive logging and error tracking
+- **🚀 Static Files**: Efficient static file serving with WhiteNoise
 
 ## Components
 
@@ -202,57 +337,78 @@ RAG_prototype/
 │   │   ├── models.py      # Database models
 │   │   ├── views.py       # API views
 │   │   ├── serializers.py # DRF serializers
-│   │   ├── rag_utils.py   # RAG core logic
-│   │   ├── document_utils.py # Document processing
-│   │   ├── tasks.py       # Celery tasks
-│   │   └── templates/     # HTML templates
-│   └── manage.py
-├── requirements.txt
-├── .env.example
-└── README.md
-```
+## 🐛 Troubleshooting
 
-### Adding New Features
+### Common Issues
 
-1. **New Document Types**: Extend `DocumentProcessor._extract_*_text()` methods
-2. **Custom Embeddings**: Modify `EmbeddingManager` class
-3. **Different LLMs**: Implement new LLM classes similar to `GeminiLLM`
-4. **UI Improvements**: Modify templates in `assistant/templates/`
+#### Document Processing Stuck
+- **Problem**: Large documents timeout in production
+- **Solution**: The app includes automatic retry logic and fallback processing
 
-### Testing
+#### "String did not match" Error
+- **Problem**: Special characters in documents cause API errors
+- **Solution**: Enhanced text cleaning and validation
 
-```bash
-# Run Django tests
-python manage.py test
+#### Pinecone Connection Issues
+- **Problem**: Vector database connection fails
+- **Solution**: Automatic fallback to local storage with proper error handling
 
-# Test API endpoints
-curl -X GET http://localhost:8000/api/documents/
-```
+### Getting Help
+1. Check the [Issues](https://github.com/yourusername/RAG_prototype/issues) page
+2. Review the application logs in Render dashboard
+3. Verify all environment variables are set correctly
 
-## Deployment
+## 🔮 Future Enhancements
 
-### Production Considerations
+- [ ] **🎨 Advanced UI Themes**: Dark mode and custom themes
+- [ ] **👥 User Authentication**: Multi-user support with document isolation
+- [ ] **📊 Analytics Dashboard**: Usage statistics and performance metrics
+- [ ] **🔄 Real-time Collaboration**: Shared document spaces
+- [ ] **📱 Mobile App**: Native mobile applications
+- [ ] **🌍 Multi-language Support**: International language support
+- [ ] **🧠 Advanced AI Models**: Integration with latest AI models
+- [ ] **📈 Scaling Options**: PostgreSQL and advanced caching
 
-1. **Environment Variables**: Set all required environment variables
-2. **Database**: Use PostgreSQL instead of SQLite
-3. **Static Files**: Configure static file serving
-4. **Security**: Set `DEBUG=False` and configure ALLOWED_HOSTS
-5. **Celery**: Use proper message broker (Redis/RabbitMQ)
-6. **File Storage**: Use cloud storage for uploaded files
+## 🤝 Contributing
 
-### Docker Deployment (Optional)
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-Create a `Dockerfile`:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-```dockerfile
-FROM python:3.11
+## 📄 License
 
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-COPY . .
-WORKDIR /app/RAG
+## 🙏 Acknowledgments
+
+- **Google AI**: For providing the Gemini API and Embeddings API
+- **Pinecone**: For the excellent vector database service
+- **Render**: For free-tier cloud hosting
+- **Django Community**: For the amazing web framework
+- **Open Source Community**: For all the incredible libraries used
+
+## 📞 Contact & Support
+
+- **🌐 Live Demo**: [https://neurarag.onrender.com](https://neurarag.onrender.com)
+- **💻 GitHub**: [https://github.com/yourusername/RAG_prototype](https://github.com/yourusername/RAG_prototype)
+- **📧 Email**: your.email@example.com
+- **🐦 Twitter**: [@yourusername](https://twitter.com/yourusername)
+
+---
+
+<div align="center">
+
+**⭐ Star this repository if you found it helpful! ⭐**
+
+Made with ❤️ by [Your Name]
+
+*Empowering conversations with AI-driven document intelligence*
+
+</div>
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 ```
