@@ -25,7 +25,7 @@ class EmbeddingManager:
     def __init__(self):
         if settings.GEMINI_API_KEY:
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            self._dimension = 768  # Google's embedding-001 model dimension
+            self._dimension = 768  # Google's text-embedding-004 model dimension
         else:
             raise ValueError("GEMINI_API_KEY is required for embeddings")
     
@@ -62,7 +62,7 @@ class EmbeddingManager:
                         time.sleep(0.5)  # Rate limit in production
                     
                     response = genai.embed_content(
-                        model="models/embedding-001",
+                        model="models/text-embedding-004",
                         content=cleaned_text,
                         task_type="retrieval_document"  # Specify task type
                     )
